@@ -6,7 +6,7 @@ services:
     container_name: ${POSTGRES_CONTAINER_NAME}
     restart: unless-stopped
     networks:
-      - ${NETWORK_NAME}
+      - nocodb
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
@@ -28,7 +28,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - ${NETWORK_NAME}
+      - nocodb
     volumes:
       - nocodb-data:/usr/app/data
     environment:
@@ -49,7 +49,7 @@ services:
       start_period: 60s
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=${NETWORK_NAME}"
+      - "traefik.docker.network=nocodb"
       - "traefik.http.routers.nocodb.rule=Host(`${TRAEFIK_HOST}`)"
       - "traefik.http.routers.nocodb.entrypoints=websecure"
       - "traefik.http.routers.nocodb.tls.certresolver=leresolver"
@@ -60,5 +60,5 @@ volumes:
   nocodb-data:
 
 networks:
-  ${NETWORK_NAME}:
+  nocodb:
     external: true
