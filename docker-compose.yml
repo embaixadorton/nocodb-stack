@@ -1,26 +1,53 @@
 version: '3.8'
 
 services:
-  nocodb:
-    image: ${NOCODB_IMAGE}
-    container_name: ${NOCODB_CONTAINER_NAME}
-    restart: always
+  postgres:
+    image: postgres:15-alpine
+    container_name: ${POSTGRES_CONTAINER_NAME}
+    restart: unless-stopped
     networks:
       - ${TRAEFIK_NETWORK}
     volumes:
-      - ./nocodb-data:/usr/app/data
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nocodb:
+    image: nocodb/nocodb:0.202.6   # Fixe a versão desejada
+    container_name: ${NOCODB_CONTAINER_NAME}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ${TRAEFIK_NETWORK}
+    volumes:
+      - nocodb-data:/usr/app/data   # Apenas para arquivos locais (uploads, etc.)
     environment:
       - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}
       - NC_PUBLIC_URL=${NOCODB_PUBLIC_URL}
       - NC_DISABLE_TELEMETRY=${NOCODB_DISABLE_TELEMETRY}
-    deploy:
-      resources:
-        limits:
-          cpus: '${NOCODB_CPUS_LIMIT}'
-          memory: ${NOCODB_MEMORY_LIMIT}
-        reservations:
-          cpus: '${NOCODB_CPUS_RESERVATION}'
-          memory: ${NOCODB_MEMORY_RESERVATION}
+      # Conexão com PostgreSQL
+      - NC_DB=pg://postgres:5432?u=${POSTGRES_USER}&p=${POSTGRES_PASSWORD}&d=${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     labels:
       - "traefik.enable=${TRAEFIK_ENABLE}"
       - "traefik.docker.network=${TRAEFIK_NETWORK}"
@@ -28,7 +55,19 @@ services:
       - "traefik.http.routers.nocodb.entrypoints=${TRAEFIK_ENTRYPOINT}"
       - "traefik.http.routers.nocodb.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
       - "traefik.http.services.nocodb.loadbalancer.server.port=${TRAEFIK_INTERNAL_PORT}"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres-data:
+    driver: local
+  nocodb-data:
+    driver: local
 
 networks:
-  nocodb:
+  traefik:
     external: true
+    name: ${TRAEFIK_NETWORK}
