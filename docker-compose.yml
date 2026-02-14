@@ -26,7 +26,7 @@ services:
         max-file: "3"
 
   nocodb:
-    image: nocodb/nocodb:0.202.6   # Fixe a versão desejada
+    image: nocodb/nocodb:0.202.6
     container_name: ${NOCODB_CONTAINER_NAME}
     restart: unless-stopped
     depends_on:
@@ -35,12 +35,11 @@ services:
     networks:
       - ${TRAEFIK_NETWORK}
     volumes:
-      - nocodb-data:/usr/app/data   # Apenas para arquivos locais (uploads, etc.)
+      - nocodb-data:/usr/app/data
     environment:
       - NC_AUTH_JWT_SECRET=${NOCODB_JWT_SECRET}
       - NC_PUBLIC_URL=${NOCODB_PUBLIC_URL}
       - NC_DISABLE_TELEMETRY=${NOCODB_DISABLE_TELEMETRY}
-      # Conexão com PostgreSQL
       - NC_DB=pg://postgres:5432?u=${POSTGRES_USER}&p=${POSTGRES_PASSWORD}&d=${POSTGRES_DB}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
@@ -68,6 +67,6 @@ volumes:
     driver: local
 
 networks:
-  traefik:
+  # Define a rede com o nome vindo da variável TRAEFIK_NETWORK
+  ${TRAEFIK_NETWORK}:
     external: true
-    name: ${TRAEFIK_NETWORK}
