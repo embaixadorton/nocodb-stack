@@ -48,11 +48,11 @@ services:
       retries: 3
       start_period: 60s
     labels:
-      - "traefik.enable=${TRAEFIK_ENABLE}"
+      - "traefik.enable=true"
       - "traefik.docker.network=${NETWORK_NAME}"
       - "traefik.http.routers.nocodb.rule=Host(`${TRAEFIK_HOST}`)"
-      - "traefik.http.routers.nocodb.entrypoints=${TRAEFIK_ENTRYPOINT}"
-      - "traefik.http.routers.nocodb.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.nocodb.entrypoints=websecure"
+      - "traefik.http.routers.nocodb.tls.certresolver=leresolver"
       - "traefik.http.services.nocodb.loadbalancer.server.port=${NOCODB_PORT}"
 
 volumes:
