@@ -6,7 +6,7 @@ services:
     container_name: ${POSTGRES_CONTAINER_NAME}
     restart: unless-stopped
     networks:
-      - ${TRAEFIK_NETWORK}
+      - nocodb
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
@@ -24,6 +24,14 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '${POSTGRES_CPUS_LIMIT}'
+          memory: ${POSTGRES_MEMORY_LIMIT}
+        reservations:
+          cpus: '${POSTGRES_CPUS_RESERVATION}'
+          memory: ${POSTGRES_MEMORY_RESERVATION}
 
   nocodb:
     image: nocodb/nocodb:0.202.6
@@ -33,7 +41,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - ${TRAEFIK_NETWORK}
+      - nocodb
     volumes:
       - nocodb-data:/usr/app/data
     environment:
@@ -49,7 +57,7 @@ services:
       start_period: 40s
     labels:
       - "traefik.enable=${TRAEFIK_ENABLE}"
-      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+      - "traefik.docker.network=nocodb"
       - "traefik.http.routers.nocodb.rule=Host(`${TRAEFIK_HOST}`)"
       - "traefik.http.routers.nocodb.entrypoints=${TRAEFIK_ENTRYPOINT}"
       - "traefik.http.routers.nocodb.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
@@ -59,6 +67,14 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '${NOCODB_CPUS_LIMIT}'
+          memory: ${NOCODB_MEMORY_LIMIT}
+        reservations:
+          cpus: '${NOCODB_CPUS_RESERVATION}'
+          memory: ${NOCODB_MEMORY_RESERVATION}
 
 volumes:
   postgres-data:
@@ -67,6 +83,5 @@ volumes:
     driver: local
 
 networks:
-  # Define a rede com o nome vindo da variável TRAEFIK_NETWORK
-  ${TRAEFIK_NETWORK}:
+  nocodb:
     external: true
